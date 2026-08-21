@@ -8,12 +8,18 @@ const metricRoutes = require('./routes/metricRoutes');
 
 const app = express();
 
-// CORS configuration (allow all by default or specific origins from CORS_ORIGIN)
-const corsOptions = process.env.CORS_ORIGIN
-  ? { origin: process.env.CORS_ORIGIN.split(',').map((o) => o.trim()) }
-  : {};
+// CORS configuration (allow browser cross-origin requests & preflight)
+let corsOptions = { origin: true, credentials: true };
+if (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*') {
+  corsOptions = {
+    origin: process.env.CORS_ORIGIN.split(',').map((o) => o.trim()),
+    credentials: true,
+  };
+}
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
+
 
 // Routes
 app.get('/', (req, res) => {
