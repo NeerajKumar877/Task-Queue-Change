@@ -33,10 +33,11 @@ export default function JobSubmitForm({ onJobSubmitted, apiBaseUrl }) {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s for Render free tier cold starts
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/jobs`, {
+      const targetUrl = `${apiBaseUrl || ''}/api/jobs`;
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
@@ -49,26 +50,28 @@ export default function JobSubmitForm({ onJobSubmitted, apiBaseUrl }) {
       });
       clearTimeout(timeoutId);
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setMessage({ type: 'success', text: `Job ${data.job.id} enqueued successfully!` });
+        setMessage({ type: 'success', text: `Job ${data.job?.id || ''} enqueued successfully!` });
         if (onJobSubmitted) onJobSubmitted();
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to enqueue job' });
+        setMessage({ type: 'error', text: data.error || `Server responded with ${res.status}` });
       }
     } catch (err) {
       clearTimeout(timeoutId);
       const isTimeout = err.name === 'AbortError';
+      console.error('Job Submit Error:', err, 'API URL:', apiBaseUrl);
       setMessage({
         type: 'error',
         text: isTimeout
-          ? 'Server request timed out. Please restart Terminal 1 (Backend API).'
-          : 'Network error submitting job.',
+          ? 'Server request timed out. If Render backend was asleep, please try again in a few seconds.'
+          : `Network error connecting to ${apiBaseUrl || 'backend'}. Please check if the backend service is running.`,
       });
     } finally {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="glass-card rounded-2xl p-6 border border-slate-800">
