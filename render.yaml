@@ -1,5 +1,5 @@
 services:
-  # 1. Backend API Web Service
+  # 1. Backend API Web Service (Free Tier)
   - type: web
     name: task-queue-backend
     runtime: node
@@ -16,8 +16,8 @@ services:
         value: "*"
     healthCheckPath: /health
 
-  # 2. Worker Background Service
-  - type: worker
+  # 2. Worker Service (Web Service on Free Tier with Health Check)
+  - type: web
     name: task-queue-worker
     runtime: node
     plan: free
@@ -25,16 +25,18 @@ services:
     buildCommand: npm install
     startCommand: node worker.js
     envVars:
+      - key: PORT
+        value: 5002
       - key: REDIS_URL
         sync: false
       - key: CONCURRENCY
         value: 3
+    healthCheckPath: /health
 
-  # 3. Frontend Dashboard (Static Site)
+  # 3. Frontend Dashboard (Static Site - Always Free)
   - type: web
     name: task-queue-frontend
     runtime: static
-    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
@@ -48,4 +50,5 @@ services:
           type: web
           name: task-queue-backend
           property: host
+
 

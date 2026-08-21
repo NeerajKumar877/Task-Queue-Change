@@ -52,9 +52,28 @@ console.log(`⚡ Worker Client Initialized (${redis instanceof RedisMock ? 'In-M
 const consumer = new TaskQueueConsumer(redis);
 consumer.start();
 
+// Start lightweight health check HTTP server for cloud platforms (e.g. Render Web Service)
+const http = require('http');
+const PORT = process.env.PORT || 5002;
+
+const healthServer = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'UP', service: 'Task Queue Worker', timestamp: new Date().toISOString() }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
+
+healthServer.listen(PORT, () => {
+  console.log(`⚡ Worker Health Server listening on port ${PORT}`);
+});
+
 // Graceful shutdown handling
 const handleShutdown = async (signal) => {
   console.log(`\n🛑 Received ${signal}. Shutting down worker gracefully...`);
+  healthServer.close();
   consumer.stop();
   try {
     if (redis && typeof redis.quit === 'function') {
@@ -68,4 +87,5 @@ const handleShutdown = async (signal) => {
 
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));
 process.on('SIGINT', () => handleShutdown('SIGINT'));
+
 
