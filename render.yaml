@@ -47,4 +47,5 @@ services:
         fromService:
           type: web
           name: task-queue-backend
-          property: url
+          property: host
+

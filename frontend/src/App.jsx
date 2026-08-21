@@ -5,9 +5,10 @@ import JobSubmitForm from './components/JobSubmitForm';
 import JobList from './components/JobList';
 import DLQTable from './components/DLQTable';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
+const rawApiUrl = import.meta.env.VITE_API_URL;
+const API_BASE_URL = rawApiUrl
+  ? (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://') ? rawApiUrl : `https://${rawApiUrl}`)
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:5001'
     : '');
 
