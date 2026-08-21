@@ -1,0 +1,50 @@
+services:
+  # 1. Backend API Web Service
+  - type: web
+    name: task-queue-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: REDIS_URL
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+    healthCheckPath: /health
+
+  # 2. Worker Background Service
+  - type: worker
+    name: task-queue-worker
+    runtime: node
+    plan: free
+    rootDir: worker
+    buildCommand: npm install
+    startCommand: node worker.js
+    envVars:
+      - key: REDIS_URL
+        sync: false
+      - key: CONCURRENCY
+        value: 3
+
+  # 3. Frontend Dashboard (Static Site)
+  - type: web
+    name: task-queue-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: task-queue-backend
+          property: url
